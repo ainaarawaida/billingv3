@@ -6,6 +6,7 @@ use stdClass;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Product;
+use App\Models\Customer;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
 use App\Livewire\NoteTable;
@@ -50,7 +51,7 @@ class RecurringInvoiceResource extends Resource
                             Forms\Components\Section::make()
                                 ->schema([
                                     Forms\Components\Select::make('customer_id')
-                                        ->relationship('customer', 'name', modifyQueryUsing: fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'teams'))
+                                        ->relationship('customer', 'name', modifyQueryUsing: fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'team'))
                                         ->searchable()
                                         ->required()
                                         ->preload()
@@ -74,11 +75,21 @@ class RecurringInvoiceResource extends Resource
                                         })
                                         ->native(false),
     
-                                    Forms\Components\ViewField::make('detail_customer')
-                                        ->dehydrated(false)
-                                        ->view('filament.detail_customer'),
-                                    // Forms\Components\Placeholder::make('detail_customer2')
-                                    // ->content(fn ($record) => new HtmlString('<b>asma</b>')),
+                                   
+                                    Forms\Components\Placeholder::make('detail_customer')
+                                        ->hiddenLabel(true)
+                                        ->content(function ($record, $get) {
+                                            if ($get('customer_id')) {
+                                                $cust = Customer::where('id', $get('customer_id'))->first();
+                                                return new HtmlString('
+                                                <b>' . $cust->name . '<br></b>
+                                                 <b>' . $cust->email . '<br></b>
+                                                  <b>' . $cust->phone . '<br></b>
+                                                
+                                                ');
+                                            }
+                                            return new HtmlString('<b>No Customer Selected </b>');
+                                        }),
                                 
                                 ])
     
@@ -178,7 +189,7 @@ class RecurringInvoiceResource extends Resource
                                         Forms\Components\Textarea::make('title')
                                             ->required(),
                                         Forms\Components\Select::make('product_id')
-                                            ->relationship('product', 'title', modifyQueryUsing: fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'teams'))
+                                            ->relationship('product', 'title', modifyQueryUsing: fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'team'))
                                             ->searchable()
                                             ->preload()
                                             ->distinct()
@@ -449,10 +460,16 @@ class RecurringInvoiceResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('invoices_sum_final_amount')
                     ->wrapHeader()
-                    ->sum('invoices', 'final_amount'),
+                    // ->sum('invoices', 'final_amount')
+                    ->sum([
+                        'invoices' => fn (Builder $query) => $query->whereIn('invoice_status', ['new','process', 'done', 'expired']),
+                    ], 'final_amount'),
                 Tables\Columns\TextColumn::make('invoices_sum_balance')
                     ->wrapHeader()
-                    ->sum('invoices', 'balance')
+                    ->sum([
+                        'invoices' => fn (Builder $query) => $query->whereIn('invoice_status', ['new','process', 'done', 'expired']),
+                    ], 'balance')
+                    // ->sum('invoices', 'balance')
                     ->summarize(Sum::make()->label('Total')),
                 Tables\Columns\ToggleColumn::make('status')
                     ->disabled()
@@ -492,12 +509,12 @@ class RecurringInvoiceResource extends Resource
                         })
                         ->requiresConfirmation()
                         ->modalHeading('Public Url')
-                        ->modalDescription( fn (Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="'.url('recurringInvoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id).'/new">Redirect to Public URL</a></button>'))
+                        ->modalDescription( fn (Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="'.url('recurring-invoice-pdf')."/".base64_encode("luqmanahmadnordin".$record->id).'">Redirect to Public URL</a></button>'))
                         ->modalSubmitActionLabel('Copy public URL')
                         ->extraAttributes(function (Model $record) {
                         return [
                                 'class' => 'copy-public_url',
-                                'myurl' => url('recurringInvoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id)."/new",
+                                'myurl' => url('recurring-invoice-pdf')."/".base64_encode("luqmanahmadnordin".$record->id),
                             ] ;
                             
                         }),
@@ -505,7 +522,7 @@ class RecurringInvoiceResource extends Resource
                         ->label('PDF')
                         ->color('success')
                         ->icon('heroicon-o-arrow-down-tray')
-                        ->url(fn ($record): ?string => url('recurringInvoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id)."/new")
+                        ->url(fn ($record): ?string => url('recurring-invoice-pdf')."/".base64_encode("luqmanahmadnordin".$record->id))
                         ->openUrlInNewTab(),
                 ])
                 ->label('More actions')

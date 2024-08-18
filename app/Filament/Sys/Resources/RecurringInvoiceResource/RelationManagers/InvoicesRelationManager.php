@@ -800,12 +800,12 @@ class InvoicesRelationManager extends RelationManager
                     })
                     ->requiresConfirmation()
                     ->modalHeading('Public Url')
-                    ->modalDescription( fn (Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="'.url('invoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id).'">Redirect to Public URL</a></button>'))
+                    ->modalDescription( fn (Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="'.url('invoice-pdf')."/".base64_encode("luqmanahmadnordin".$record->id).'">Redirect to Public URL</a></button>'))
                     ->modalSubmitActionLabel('Copy public URL')
                     ->extraAttributes(function (Model $record) {
                        return [
                             'class' => 'copy-public_url',
-                            'myurl' => url('invoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id),
+                            'myurl' => url('invoice-pdf')."/".base64_encode("luqmanahmadnordin".$record->id),
                         ] ;
                         
                     }),
@@ -813,7 +813,7 @@ class InvoicesRelationManager extends RelationManager
                     ->label('PDF')
                     ->color('success')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn ($record): ?string => url('invoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id))
+                    ->url(fn ($record): ?string => url('invoice-pdf')."/".base64_encode("luqmanahmadnordin".$record->id))
                     ->openUrlInNewTab(),
                     // ->action(function (Model $record) {
                     //     return response()->streamDownload(function () use ($record) {

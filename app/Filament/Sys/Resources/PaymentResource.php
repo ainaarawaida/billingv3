@@ -33,23 +33,32 @@ class PaymentResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $prefix = TeamSetting::where('team_id', Filament::getTenant()->id )->first()->invoice_prefix_code ?? '#I' ;
-        
+        $prefix = TeamSetting::where('team_id', Filament::getTenant()->id)->first()->invoice_prefix_code ?? '#I';
+
         return $form
             ->schema([
                 Forms\Components\Section::make()
                     ->schema([
                         Forms\Components\Select::make('invoice_id')
+                            ->live()
                             ->prefix($prefix)
-                            ->relationship('invoice', 'numbering', modifyQueryUsing: fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'team'))
+                            ->relationship('invoice', 'numbering', modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'team'))
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->helperText(function (Get $get, string $operation) use ($prefix) {
+                                if ($get('invoice_id')) {
+                                    $invoice = Invoice::find($get('invoice_id'));
+                                    $getInvoiceUrl = InvoiceResource::getUrl('edit', ['record' => $invoice->id]);
+                                    return new HtmlString('<a wire:navigate class="text-primary-500" href="' . $getInvoiceUrl  . '">' . $prefix . $invoice->numbering . '</a>');
+                                }
+                                return '';
+                            }),
                         Forms\Components\Select::make('payment_method_id')
                             ->label("Payment Method")
-                            ->options(function (Get $get, string $operation){
+                            ->options(function (Get $get, string $operation) {
                                 $payment_method = PaymentMethod::where('team_id', Filament::getTenant()->id)
-                                ->where('status', 1)->get()->pluck('bank_name', 'id');
-                                return $payment_method ;
+                                    ->where('status', 1)->get()->pluck('bank_name', 'id');
+                                return $payment_method;
                             })
                             ->searchable()
                             ->preload()
@@ -61,36 +70,36 @@ class PaymentResource extends Resource
                             ->required()
                             ->prefix('RM')
                             ->regex('/^[0-9]*(?:\.[0-9]*)?(?:,[0-9]*(?:\.[0-9]*)?)*$/')
-                            ->formatStateUsing(fn (string $state): string => number_format($state, 2))
-                            ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
+                            ->formatStateUsing(fn(string $state): string => number_format($state, 2))
+                            ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
                             ->default(0.00),
                         Forms\Components\Select::make('status')
-                                ->options([
-                                    'draft' => 'Draft',
-                                    'pending_payment' => 'Pending payment',
-                                    'on_hold' => 'On hold',
-                                    'processing ' => 'Processing ',
-                                    'completed' => 'Completed',
-                                    'failed' => 'Failed',
-                                    'cancelled' => 'Cancelled',
-                                    'refunded' => 'Refunded',
-                                ])
-                                ->default('draft')
-                                ->searchable()
-                                ->preload()
-                                ->required(),
+                            ->options([
+                                'draft' => 'Draft',
+                                'pending_payment' => 'Pending payment',
+                                'on_hold' => 'On hold',
+                                'processing ' => 'Processing ',
+                                'completed' => 'Completed',
+                                'failed' => 'Failed',
+                                'cancelled' => 'Cancelled',
+                                'refunded' => 'Refunded',
+                            ])
+                            ->default('draft')
+                            ->searchable()
+                            ->preload()
+                            ->required(),
                         Forms\Components\TextInput::make('reference')
-                                ->required(),    
+                            ->required(),
                         Forms\Components\FileUpload::make('attachments')
-                                ->label(__('Attachments'))
-                                ->directory('payment-attachments')
-                                ->multiple()
-                                ->downloadable(),
+                            ->label(__('Attachments'))
+                            ->directory('payment-attachments')
+                            ->multiple()
+                            ->downloadable(),
                         Forms\Components\Textarea::make('notes')
                             ->maxLength(65535)
                             ->columnSpanFull(),
 
-                        
+
                     ])
                     ->columns(2),
             ]);
@@ -98,17 +107,18 @@ class PaymentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $prefix = TeamSetting::where('team_id', Filament::getTenant()->id )->first()->invoice_prefix_code ?? '#I' ;
-       
+        $prefix = TeamSetting::where('team_id', Filament::getTenant()->id)->first()->invoice_prefix_code ?? '#I';
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('invoice.numbering')
                     ->numeric()
                     ->sortable()
                     ->searchable()
-                    ->formatStateUsing(function(string $state, $record): string {
+                    ->formatStateUsing(
+                        function (string $state, $record): string {
                             return "{$state}";
-                        } 
+                        }
                     )
                     ->color('primary')
                     ->prefix($prefix)
@@ -133,7 +143,7 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->searchable()
-                    ->formatStateUsing(fn (string $state): string => __(ucwords($state))),
+                    ->formatStateUsing(fn(string $state): string => __(ucwords($state))),
                 Tables\Columns\TextColumn::make('deleted_at')
                     ->dateTime()
                     ->sortable()
@@ -156,63 +166,48 @@ class PaymentResource extends Resource
                     Tables\Actions\DeleteAction::make()
                         ->after(function (array $data, Model $record) {
                             //update balance on invoice
-                            if($record->invoice_id){
+                            if ($record->invoice_id) {
                                 $invoice = Invoice::find($record->invoice_id);
-                                $totalPayment = Payment::where('team_id', Filament::getTenant()->id)
-                                ->where('invoice_id', $invoice->id)
-                                ->where('status', 'completed')->sum('total');
-                                $totalRefunded = Payment::where('team_id', Filament::getTenant()->id)
-                                ->where('invoice_id', $record->id)
-                                ->where('status', 'refunded')->sum('total');
-
-                                $invoice->balance = $invoice->final_amount - $totalPayment + $totalRefunded ; 
-                                if($invoice->balance == 0){
-                                    $invoice->invoice_status = 'done'; 
-                                }elseif($invoice->invoice_status == 'done'){
-                                    $invoice->invoice_status = 'new' ;
-                                }
+                                $invoice->updateBalanceInvoice();
                                 $invoice->update();
-                                
                             }
                         }),
                     Tables\Actions\ForceDeleteAction::make(),
                     Tables\Actions\ViewAction::make(),
-                    Tables\Actions\Action::make('public_url') 
+                    Tables\Actions\Action::make('public_url')
                         ->label('Public Url')
                         ->color('success')
                         ->icon('heroicon-o-globe-alt')
                         ->action(function (Model $record) {
                             Notification::make()
-                            ->title('Copy Public Url Successfully')
-                            ->success()
-                            ->send();
-                            
+                                ->title('Copy Public Url Successfully')
+                                ->success()
+                                ->send();
                         })
                         ->requiresConfirmation()
                         ->modalHeading('Public Url')
-                        ->modalDescription( fn (Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="'.url('paymentpdf')."/".base64_encode("luqmanahmadnordin".$record->id).'">Redirect to Public URL</a></button>'))
+                        ->modalDescription(fn(Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="' . url('payment-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id) . '">Redirect to Public URL</a></button>'))
                         ->modalSubmitActionLabel('Copy public URL')
                         ->extraAttributes(function (Model $record) {
-                           return [
+                            return [
                                 'class' => 'copy-public_url',
-                                'myurl' => url('paymentpdf')."/".base64_encode("luqmanahmadnordin".$record->id),
-                            ] ;
-                            
+                                'myurl' => url('payment-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id),
+                            ];
                         }),
-                    Tables\Actions\Action::make('pdf') 
+                    Tables\Actions\Action::make('pdf')
                         ->label('PDF')
                         ->color('success')
                         ->icon('heroicon-o-arrow-down-tray')
-                        ->url(fn ($record): ?string => url('paymentpdf')."/".base64_encode("luqmanahmadnordin".$record->id))
+                        ->url(fn($record): ?string => url('payment-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id))
                         ->openUrlInNewTab(),
-                       
-                    
+
+
                 ])
-                ->label('More actions')
-                ->icon('heroicon-m-ellipsis-vertical')
-                ->size(ActionSize::Small)
-                ->color('primary')
-                ->button()
+                    ->label('More actions')
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->size(ActionSize::Small)
+                    ->color('primary')
+                    ->button()
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -223,7 +218,7 @@ class PaymentResource extends Resource
             ])
             ->defaultSort('updated_at', 'desc')
             ->recordUrl(
-                fn (Model $record): string => PaymentResource::getUrl('edit', ['record' => $record->id])
+                fn(Model $record): string => PaymentResource::getUrl('edit', ['record' => $record->id])
             );
     }
 
@@ -255,7 +250,6 @@ class PaymentResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::whereBelongsTo(Filament::getTenant(), 'team')
-        ->where('status', 'pending_payment')->count();
-        
+            ->where('status', 'pending_payment')->count();
     }
 }

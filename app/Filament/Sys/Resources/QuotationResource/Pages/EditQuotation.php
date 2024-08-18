@@ -64,7 +64,7 @@ class EditQuotation extends EditRecord
              })
             ->action(function (array $data,Component $livewire) {
                 $this->save();
-                if($data['status_create_invoice']){
+                if(isset($data['status_create_invoice']) && $data['status_create_invoice']){
                     $team_setting = TeamSetting::where('team_id', $this->record->team_id )->first();
                     $invoice_current_no = $team_setting->invoice_current_no ?? '0' ;    
 

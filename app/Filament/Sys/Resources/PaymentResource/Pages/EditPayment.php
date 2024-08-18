@@ -45,39 +45,14 @@ class EditPayment extends EditRecord
         $record->update($data);
 
         if($needUpdateBalance && $record->invoice_id){
-            $totalPayment = Payment::where('team_id', Filament::getTenant()->id)
-            ->where('invoice_id', $record->invoice_id)
-            ->where('status', 'completed')->sum('total');
-            $totalRefunded = Payment::where('team_id', Filament::getTenant()->id)
-            ->where('invoice_id', $record->invoice_id)
-            ->where('status', 'refunded')->sum('total');
-
             $invoice = Invoice::find($record->invoice_id);
-            $invoice->balance = $invoice->final_amount - $totalPayment + $totalRefunded; 
-            if($invoice->balance == 0){
-                $invoice->invoice_status = 'paid';
-            }elseif($invoice->invoice_status == 'done'){
-                $invoice->invoice_status = 'new' ;
-            }
-
+            $invoice->updateBalanceInvoice();
             $invoice->update();
         }
         if($oriInvoice_id && $oriInvoice_id != $record->invoice_id){
             //update original invoice balance
-            $totalPayment = Payment::where('team_id', Filament::getTenant()->id)
-            ->where('invoice_id', $oriInvoice_id)
-            ->where('status', 'completed')->sum('total');
-            $totalRefunded = Payment::where('team_id', Filament::getTenant()->id)
-            ->where('invoice_id', $oriInvoice_id)
-            ->where('status', 'refunded')->sum('total');
-
             $invoice = Invoice::find($oriInvoice_id);
-            $invoice->balance = $invoice->final_amount - $totalPayment + $totalRefunded; 
-            if($invoice->balance == 0){
-                $invoice->invoice_status = 'paid';
-            }elseif($invoice->invoice_status == 'done'){
-                $invoice->invoice_status = 'new' ;
-            }
+            $invoice->updateBalanceInvoice();
             $invoice->update();
 
         }

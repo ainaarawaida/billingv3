@@ -1,4 +1,4 @@
-<div>
+<div class="myfooter">
     <div style="margin-bottom: 50px;">
         <div class="text-center mb-10 md:mb-0">
             Developed @
@@ -60,4 +60,5 @@
     })
   
   </script>
+  
 

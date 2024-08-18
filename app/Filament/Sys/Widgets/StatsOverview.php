@@ -7,7 +7,7 @@ use App\Models\Payment;
 use Livewire\Attributes\On;
 use Filament\Facades\Filament;
 use Filament\Widgets\AccountWidget;
-use App\Filament\App\Pages\Dashboard;
+use App\Filament\Sys\Pages\Dashboard;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 

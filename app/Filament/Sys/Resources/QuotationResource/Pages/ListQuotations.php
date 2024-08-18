@@ -27,11 +27,11 @@ class ListQuotations extends ListRecords
             ImportAction::make()
                 ->importer(QuotationImporter::class)
                 ->icon('heroicon-o-arrow-up-on-square')
-                ->color('primary'), 
+                ->color('primary'),
             ExportAction::make()
                 ->exporter(QuotationExporter::class)
                 ->icon('heroicon-o-arrow-down-on-square')
-                ->color('primary'), 
+                ->color('primary'),
         ];
     }
 
@@ -42,28 +42,33 @@ class ListQuotations extends ListRecords
             'draft' => Tab::make()
                 // ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
                 // ->where('quote_status', 'draft')->count())
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('quote_status', 'draft')),
+                ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'draft')),
             'new' => Tab::make()
                 ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
-                ->where('quote_status', 'new')->count())
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('quote_status', 'new')),
+                    ->where('quote_status', 'new')->count())
+                ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'new')),
             'process' => Tab::make()
                 // ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
                 // ->where('quote_status', 'process')->count())
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('quote_status', 'process')),
+                ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'process')),
             'done' => Tab::make()
                 // ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
                 // ->where('quote_status', 'done')->count())
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('quote_status', 'done')),
+                ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'done')),
             'expired' => Tab::make()
                 // ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
                 // ->where('quote_status', 'expired')->count())
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('quote_status', 'expired')),
+                ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'expired')),
             'cancelled' => Tab::make()
                 // ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
                 // ->where('quote_status', 'cancelled')->count())
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('quote_status', 'cancelled')),
-               
+                ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'cancelled')),
+
         ];
+    }
+
+    public function getDefaultActiveTab(): string | int | null
+    {
+        return 'new';
     }
 }

@@ -143,7 +143,7 @@ class QuotationResource extends Resource
                                         'cancelled' => 'Cancelled',
 
                                     ])
-                                    ->default('draft')
+                                    ->default('new')
                                     ->searchable()
                                     ->preload()
                                     ->required(),
@@ -731,12 +731,12 @@ class QuotationResource extends Resource
                         })
                         ->requiresConfirmation()
                         ->modalHeading('Public Url')
-                        ->modalDescription(fn (Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="' . url('quotationpdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id) . '">Redirect to Public URL</a></button>'))
+                        ->modalDescription(fn (Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="' . url('quotation-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id) . '">Redirect to Public URL</a></button>'))
                         ->modalSubmitActionLabel('Copy public URL')
                         ->extraAttributes(function (Model $record) {
                             return [
                                 'class' => 'copy-public_url',
-                                'myurl' => url('quotationpdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id),
+                                'myurl' => url('quotation-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id),
                             ];
                         }),
                     Tables\Actions\Action::make('gen_invoice')
@@ -793,7 +793,7 @@ class QuotationResource extends Resource
                         ->label('PDF')
                         ->color('success')
                         ->icon('heroicon-o-arrow-down-tray')
-                        ->url(fn ($record): ?string => url('quotationpdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id))
+                        ->url(fn ($record): ?string => url('quotation-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id))
                         ->openUrlInNewTab(),
                     // ->action(function (Model $record) {
                     //     return response()->streamDownload(function () use ($record) {

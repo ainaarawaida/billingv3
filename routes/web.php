@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Livewire\Quotationpdf;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Route;
 use App\Http\Responses\LogoutResponse;
@@ -17,3 +18,5 @@ Route::get('/logout', function (Request $request) {
     $request->session()->regenerateToken();
     return app(LogoutResponse::class);
 })->name('logout');
+
+

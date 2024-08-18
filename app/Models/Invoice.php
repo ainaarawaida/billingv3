@@ -41,4 +41,34 @@ class Invoice extends Model
         return $this->hasMany(Note::class, 'type_id');
     }
 
+    public function updateBalanceInvoice(){
+        $totalPayment = Payment::where('team_id', $this->team_id)
+        ->where('invoice_id', $this->id)
+        ->where('status', 'completed')->sum('total');
+        $totalRefunded = Payment::where('team_id', $this->team_id)
+        ->where('invoice_id', $this->id)
+        ->where('status', 'refunded')->sum('total');
+
+        $this->balance = $this->final_amount - $totalPayment + $totalRefunded; 
+        if($this->balance == 0){
+            $this->invoice_status = 'done'; 
+        }elseif($this->invoice_status == 'done'){
+            $this->invoice_status = 'new' ;
+        }
+        $this->update();
+   
+    }
+
+    public function getTotalPayment()
+    {
+        $totalPayment = Payment::where('team_id', $this->team_id)
+        ->where('invoice_id', $this->id)
+        ->where('status', 'completed')->sum('total');
+        $totalRefunded = Payment::where('team_id', $this->team_id)
+        ->where('invoice_id', $this->id)
+        ->where('status', 'refunded')->sum('total');
+        
+        return $totalPayment - $totalRefunded;
+    }
+
 }

@@ -38,17 +38,18 @@ class EditInvoice extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         //update balance 
-        $totalPayment = Payment::where('team_id', Filament::getTenant()->id)
-        ->where('invoice_id', $record->id)
-        ->where('status', 'completed')->sum('total');
-        $totalRefunded = Payment::where('team_id', Filament::getTenant()->id)
-        ->where('invoice_id', $record->id)
-        ->where('status', 'refunded')->sum('total');
+        $record->updateBalanceInvoice();
+        // $totalPayment = Payment::where('team_id', Filament::getTenant()->id)
+        // ->where('invoice_id', $record->id)
+        // ->where('status', 'completed')->sum('total');
+        // $totalRefunded = Payment::where('team_id', Filament::getTenant()->id)
+        // ->where('invoice_id', $record->id)
+        // ->where('status', 'refunded')->sum('total');
 
-        $data['balance'] = $data['final_amount'] - $totalPayment + $totalRefunded;
-        if($data['balance'] == 0){
-            $data['invoice_status'] = 'done';
-        }
+        // $data['balance'] = $data['final_amount'] - $totalPayment + $totalRefunded;
+        // if($data['balance'] == 0){
+        //     $data['invoice_status'] = 'done';
+        // }
       
         $record->update($data);
         return $record;

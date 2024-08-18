@@ -64,19 +64,19 @@ class InvoiceResource extends Resource
                             ->schema([
 
                                 Forms\Components\Select::make('customer_id')
-                                    ->relationship('customer', 'name', modifyQueryUsing: fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'team'))
+                                    ->relationship('customer', 'name', modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'team'))
                                     ->searchable()
                                     ->required()
                                     ->preload()
                                     ->live(onBlur: true)
-                                
+
                                     ->createOptionForm([
                                         self::customerForm(),
                                     ])
                                     ->createOptionAction(function (Action $action) {
                                         $action->mutateFormDataUsing(function ($data) {
                                             $data['team_id'] = Filament::getTenant()->id;
-                                    
+
                                             return $data;
                                         });
 
@@ -87,100 +87,111 @@ class InvoiceResource extends Resource
                                             ->slideOver();
                                     })
                                     ->native(false),
-
-                                Forms\Components\ViewField::make('detail_customer')
-                                    ->dehydrated(false)
-                                    ->view('filament.detail_customer'),
+                                Forms\Components\Placeholder::make('detail_customer')
+                                    ->hiddenLabel(true)
+                                    ->content(function ($record, $get) {
+                                        if ($get('customer_id')) {
+                                            $cust = Customer::where('id', $get('customer_id'))->first();
+                                            return new HtmlString('
+                                            <b>' . $cust->name . '<br></b>
+                                             <b>' . $cust->email . '<br></b>
+                                              <b>' . $cust->phone . '<br></b>
+                                            
+                                            ');
+                                        }
+                                        return new HtmlString('<b>No Customer Selected </b>');
+                                    }),
+                                // Forms\Components\ViewField::make('detail_customer')
+                                //     ->dehydrated(false)
+                                //     ->view('filament.detail_customer'),
                                 // Forms\Components\Placeholder::make('detail_customer2')
                                 // ->content(fn ($record) => new HtmlString('<b>asma</b>')),
-                            
+
                             ])
 
-                        
+
                     ]),
                 Forms\Components\Group::make()
                     ->schema([
                         Forms\Components\Section::make()
-                        ->schema([
-                            Forms\Components\Group::make()
-                                ->schema([
-                                    Forms\Components\DatePicker::make('invoice_date')
-                                    // ->format('d/m/Y')
-                                    ->native(false)
-                                    ->live(onBlur: true)
-                                    ->displayFormat('d/m/Y')
-                                    ->default(now())
-                                    ->required(),
-                                Forms\Components\DatePicker::make('pay_before')
-                                    ->native(false)
-                                    ->displayFormat('d/m/Y')
-                                    ->default(now()->addDays(1))
-                                    ->minDate(fn($get)=> Carbon::parse($get('invoice_date')))
-                                    ->required(),
-    
-                                
-                                ])
-                                ->columns(2),
-                            Forms\Components\Group::make()
-                                ->schema([
-                                    Forms\Components\Select::make('invoice_status')
-                                        ->label('Invoice Status')
-                                        ->options([
-                                            'draft' => 'Draft',
-                                            'new' => 'New',
-                                            'process' => 'Process',
-                                            'done' => 'Done',
-                                            'expired' => 'Expired',
-                                            'cancelled' => 'Cancelled',
-        
-                                        ])
-                                        ->default('draft')
-                                        ->searchable()
-                                        ->preload()
-                                        ->required()
-                                        ->rules([
-                                            fn (Get $get): Closure => function (string $attribute, $value, Closure $fail) use ($get) {
-                                                if ( $value == 'done' && $get('balance') != 0 ) {
-                                                    $fail("The :attribute is invalid. The balance is not zero for status Done.");
-                                                }
-                                             
-                                            },
-                                        ]),
-                                   Forms\Components\Placeholder::make('recurring_invoice_id')
-                                        ->visible(fn($record) => $record?->recurringInvoices()->first())
-                                        ->content(function($record){
-                                            $prefix = TeamSetting::where('team_id', Filament::getTenant()->id )->first()->recurring_invoice_prefix_code ?? '#RI' ;
-                                            return new HtmlString('<a class="text-primary-500" href="'.RecurringInvoiceResource::getUrl('edit', ['record' => $record->recurring_invoice_id]).'" wire:navigate>'.$prefix.$record->recurringInvoices()->first()->numbering.'</a>');
-                                        }) 
-
-                                ])
-                                ->columns(2),
-                           
-
-                            Forms\Components\TextInput::make('numbering')
-                                ->hiddenLabel()
-                                ->disabled(fn (string $operation): string => $operation == 'create')
-                                // ->readOnly()
-                                // ->dehydrated(false)
-                                ->prefix(fn (string $operation): string => TeamSetting::where('team_id', Filament::getTenant()->id )->first()->invoice_prefix_code ?? '#I')
-                                // ->visible(fn (string $operation): bool => $operation === 'edit')
-                                ->formatStateUsing(function(?string $state, $operation, $record): ?string {
-                                    if($operation === 'create'){
-                                        $tenant_id = Filament::getTenant()->id ;
-                                        $team_setting = TeamSetting::where('team_id', $tenant_id )->first();
-                                        $invoice_current_no = $team_setting->invoice_current_no ?? '0' ;    
-
-                                        // $lastid = Invoice::where('team_id', $tenant_id)->count('id') + 1 ;
-                                        return str_pad(($invoice_current_no + 1), 6, "0", STR_PAD_LEFT) ;
-
-                                    }else{
-                                        return $record->numbering ;
-                                    }
-                                }),
+                            ->schema([
+                                Forms\Components\Group::make()
+                                    ->schema([
+                                        Forms\Components\DatePicker::make('invoice_date')
+                                            // ->format('d/m/Y')
+                                            ->native(false)
+                                            ->live(onBlur: true)
+                                            ->displayFormat('d/m/Y')
+                                            ->default(now())
+                                            ->required(),
+                                        Forms\Components\DatePicker::make('pay_before')
+                                            ->native(false)
+                                            ->displayFormat('d/m/Y')
+                                            ->default(now()->addDays(1))
+                                            ->minDate(fn($get) => Carbon::parse($get('invoice_date')))
+                                            ->required(),
 
 
-                        ])
-                        
+                                    ])
+                                    ->columns(2),
+                                Forms\Components\Group::make()
+                                    ->schema([
+                                        Forms\Components\Select::make('invoice_status')
+                                            ->label('Invoice Status')
+                                            ->options([
+                                                'draft' => 'Draft',
+                                                'new' => 'New',
+                                                'process' => 'Process',
+                                                'done' => 'Done',
+                                                'expired' => 'Expired',
+                                                'cancelled' => 'Cancelled',
+
+                                            ])
+                                            ->default('new')
+                                            ->searchable()
+                                            ->preload()
+                                            ->required()
+                                            ->rules([
+                                                fn(Get $get): Closure => function (string $attribute, $value, Closure $fail) use ($get) {
+                                                    if ($value == 'done' && $get('balance') != 0) {
+                                                        $fail("The :attribute is invalid. The balance is not zero for status Done.");
+                                                    }
+                                                },
+                                            ]),
+                                        Forms\Components\Placeholder::make('recurring_invoice_id')
+                                            ->visible(fn($record) => $record?->recurringInvoices()->first())
+                                            ->content(function ($record) {
+                                                $prefix = TeamSetting::where('team_id', Filament::getTenant()->id)->first()->recurring_invoice_prefix_code ?? '#RI';
+                                                return new HtmlString('<a class="text-primary-500" href="' . RecurringInvoiceResource::getUrl('edit', ['record' => $record->recurring_invoice_id]) . '" wire:navigate>' . $prefix . $record->recurringInvoices()->first()->numbering . '</a>');
+                                            })
+
+                                    ])
+                                    ->columns(2),
+
+
+                                Forms\Components\TextInput::make('numbering')
+                                    ->hiddenLabel()
+                                    ->disabled(fn(string $operation): string => $operation == 'create')
+                                    // ->readOnly()
+                                    // ->dehydrated(false)
+                                    ->prefix(fn(string $operation): string => TeamSetting::where('team_id', Filament::getTenant()->id)->first()->invoice_prefix_code ?? '#I')
+                                    // ->visible(fn (string $operation): bool => $operation === 'edit')
+                                    ->formatStateUsing(function (?string $state, $operation, $record): ?string {
+                                        if ($operation === 'create') {
+                                            $tenant_id = Filament::getTenant()->id;
+                                            $team_setting = TeamSetting::where('team_id', $tenant_id)->first();
+                                            $invoice_current_no = $team_setting->invoice_current_no ?? '0';
+
+                                            // $lastid = Invoice::where('team_id', $tenant_id)->count('id') + 1 ;
+                                            return str_pad(($invoice_current_no + 1), 6, "0", STR_PAD_LEFT);
+                                        } else {
+                                            return $record->numbering;
+                                        }
+                                    }),
+
+
+                            ])
+
                     ]),
 
                 Forms\Components\Section::make()
@@ -190,189 +201,186 @@ class InvoiceResource extends Resource
                     ]),
 
                 Forms\Components\Section::make()
-                ->schema([
-                    Forms\Components\Repeater::make('items')
-                        ->live(onBlur: true)
-                        ->minItems(1)
-                        ->collapsible()
-                        ->relationship('items')
-                        ->schema([
-                            Forms\Components\Group::make()
+                    ->schema([
+                        Forms\Components\Repeater::make('items')
+                            ->live(onBlur: true)
+                            ->minItems(1)
+                            ->collapsible()
+                            ->relationship('items')
                             ->schema([
-                                Forms\Components\Textarea::make('title')
-                                ->required(),
-                            Forms\Components\Select::make('product_id')
-                                ->relationship('product', 'title', modifyQueryUsing: fn (Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'team'))
-                                ->searchable()
-                                ->preload()
-                                ->distinct()
-                                ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                ->createOptionForm([
-                                    Forms\Components\Textarea::make('title')
-                                        ->maxLength(65535)
-                                        ->columnSpanFull(),
-                                    Forms\Components\Checkbox::make('tax')
-                                        // ->live(onBlur: true)
-                                        ->inline(false),
+                                Forms\Components\Group::make()
+                                    ->schema([
+                                        Forms\Components\Textarea::make('title')
+                                            ->required(),
+                                        Forms\Components\Select::make('product_id')
+                                            ->relationship('product', 'title', modifyQueryUsing: fn(Builder $query) => $query->whereBelongsTo(Filament::getTenant(), 'team'))
+                                            ->searchable()
+                                            ->preload()
+                                            ->distinct()
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                            ->createOptionForm([
+                                                Forms\Components\Textarea::make('title')
+                                                    ->maxLength(65535)
+                                                    ->columnSpanFull(),
+                                                Forms\Components\Checkbox::make('tax')
+                                                    // ->live(onBlur: true)
+                                                    ->inline(false),
 
-                                    Forms\Components\TextInput::make('quantity')
-                                        ->required()
-                                        ->numeric()
-                                        ->default(0),
-                                    Forms\Components\TextInput::make('price')
-                                        ->required()
-                                        ->regex('/^[0-9]*(?:\.[0-9]*)?(?:,[0-9]*(?:\.[0-9]*)?)*$/')
-                                        ->prefix('RM')
-                                        ->formatStateUsing(fn (?string $state): ?string => number_format($state, 2))
-                                        ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
-                                ])
-                                ->createOptionAction(function (Action $action) {
-                                    $action->mutateFormDataUsing(function ($data) {
-                                        $data['team_id'] = Filament::getTenant()->id;
-                                
-                                        return $data;
-                                    });
-                                    
-                                    return $action
-                                        // ->modalHeading('Create customer')
-                                        // ->modalSubmitActionLabel('Create customer')
-                                        ->modalWidth(MaxWidth::Screen)
-                                        ->slideOver();
-                                })
-                                ->afterStateUpdated(function ($state, $set, $get ){
-                                    
-                                    $product = Product::find($state);
-                                    $set('price', number_format((float)$product?->price, 2));
-                                    $set('tax', (bool)$product?->tax);
-                                    $set('quantity', (int)$product?->quantity);
+                                                Forms\Components\TextInput::make('quantity')
+                                                    ->required()
+                                                    ->numeric()
+                                                    ->default(0),
+                                                Forms\Components\TextInput::make('price')
+                                                    ->required()
+                                                    ->regex('/^[0-9]*(?:\.[0-9]*)?(?:,[0-9]*(?:\.[0-9]*)?)*$/')
+                                                    ->prefix('RM')
+                                                    ->formatStateUsing(fn(?string $state): ?string => number_format($state, 2))
+                                                    ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
+                                            ])
+                                            ->createOptionAction(function (Action $action) {
+                                                $action->mutateFormDataUsing(function ($data) {
+                                                    $data['team_id'] = Filament::getTenant()->id;
 
-                                    // dd((float)$product?->price,number_format((float)str_replace(",", "", $product?->price), 2), $product?->quantity, $get('price'), (float)$get('price'));
-                                    $set('total', number_format((int)$product?->quantity*(float)str_replace(",", "", $get('price')), 2)  );
-                                   
-                                }),
+                                                    return $data;
+                                                });
+
+                                                return $action
+                                                    // ->modalHeading('Create customer')
+                                                    // ->modalSubmitActionLabel('Create customer')
+                                                    ->modalWidth(MaxWidth::Screen)
+                                                    ->slideOver();
+                                            })
+                                            ->afterStateUpdated(function ($state, $set, $get) {
+
+                                                $product = Product::find($state);
+                                                $set('price', number_format((float)$product?->price, 2));
+                                                $set('tax', (bool)$product?->tax);
+                                                $set('quantity', (int)$product?->quantity);
+
+                                                // dd((float)$product?->price,number_format((float)str_replace(",", "", $product?->price), 2), $product?->quantity, $get('price'), (float)$get('price'));
+                                                $set('total', number_format((int)$product?->quantity * (float)str_replace(",", "", $get('price')), 2));
+                                            }),
+                                    ])
+                                    ->columns(2),
+                                Forms\Components\Group::make()
+                                    ->schema([
+                                        Forms\Components\TextInput::make('price')
+                                            ->required()
+                                            ->prefix('RM')
+                                            ->regex('/^[0-9]*(?:\.[0-9]*)?(?:,[0-9]*(?:\.[0-9]*)?)*$/')
+                                            ->formatStateUsing(fn(string $state): string => number_format($state, 2))
+                                            ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
+
+                                            ->afterStateUpdated(function ($state, $set, $get) {
+                                                $set('total', number_format((float)str_replace(",", "", $state) * (int)$get('quantity'), 2));
+                                            })
+                                            ->default(0.00),
+                                        Forms\Components\Checkbox::make('tax')
+                                            ->inline(false),
+                                        Forms\Components\TextInput::make('quantity')
+                                            ->required()
+                                            ->numeric()
+                                            ->afterStateUpdated(function ($state, $set, $get) {
+                                                $set('total', number_format($state * (float)str_replace(",", "", $get('price')), 2));
+                                            })
+                                            ->default(1),
+                                        Forms\Components\Select::make('unit')
+                                            ->options([
+                                                'Unit' => 'Unit',
+                                                'Kg' => 'Kg',
+                                                'Gram' => 'Gram',
+                                                'Box' => 'Box',
+                                                'Pack' => 'Pack',
+                                                'Day' => 'Day',
+                                                'Month' => 'Month',
+                                                'Year' => 'Year',
+                                                'People' => 'People',
+
+                                            ])
+                                            ->default('Unit')
+                                            ->searchable()
+                                            ->preload()
+                                            ->required(),
+                                        Forms\Components\TextInput::make('total')
+                                            ->prefix('RM')
+                                            ->readonly()
+                                            ->formatStateUsing(fn(string $state): string => number_format($state, 2))
+                                            ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
+                                            ->default(0.00),
+                                    ])
+                                    ->columns(5),
+
+
+
                             ])
-                            ->columns(2),
-                            Forms\Components\Group::make()
-                                ->schema([
-                                    Forms\Components\TextInput::make('price')
-                                        ->required()
-                                        ->prefix('RM')
-                                        ->regex('/^[0-9]*(?:\.[0-9]*)?(?:,[0-9]*(?:\.[0-9]*)?)*$/')
-                                        ->formatStateUsing(fn (string $state): string => number_format($state, 2))
-                                        ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
+                            ->mutateRelationshipDataBeforeSaveUsing(function (array $data): array {
+                                return $data;
+                            }),
 
-                                        ->afterStateUpdated(function ($state, $set, $get ){
-                                            $set('total', number_format((float)str_replace(",", "", $state)*(int)$get('quantity'), 2)  );
-                                          
-                                        })
-                                        ->default(0.00),
-                                    Forms\Components\Checkbox::make('tax')
-                                        ->inline(false),
-                                    Forms\Components\TextInput::make('quantity')
-                                        ->required()
-                                        ->numeric()
-                                        ->afterStateUpdated(function ($state, $set, $get ){
-                                            $set('total', number_format($state*(float)str_replace(",", "", $get('price')), 2)  );
-                                        })
-                                        ->default(1),
-                                    Forms\Components\Select::make('unit')
-                                        ->options([
-                                            'Unit' => 'Unit',
-                                            'Kg' => 'Kg',
-                                            'Gram' => 'Gram',
-                                            'Box' => 'Box',
-                                            'Pack' => 'Pack',
-                                            'Day' => 'Day',
-                                            'Month' => 'Month',
-                                            'Year' => 'Year',
-                                            'People' => 'People',
-
-                                        ])
-                                        ->default('Unit')
-                                        ->searchable()
-                                        ->preload()
-                                        ->required(),
-                                    Forms\Components\TextInput::make('total')
-                                        ->prefix('RM')
-                                        ->readonly()
-                                        ->formatStateUsing(fn (string $state): string => number_format($state, 2))
-                                        ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
-                                        ->default(0.00),
-                                ])
-                                ->columns(5),
-
-                           
-                            
-                        ])
-                        ->mutateRelationshipDataBeforeSaveUsing(function (array $data): array {
-                           return $data;
-                        }),
-
-                ]),
+                    ]),
                 Forms\Components\Section::make()
                     ->schema([
                         Forms\Components\Group::make()
-                        ->schema([
-                            Forms\Components\TextInput::make('sub_total')
-                                ->formatStateUsing(fn ( $state)  => number_format($state, 2))
-                                ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
-                                ->prefix('RM')
-                                ->readonly()
-                                ->default(0),
-                            Forms\Components\TextInput::make('taxes')
-                                ->formatStateUsing(fn ( $state)  => number_format($state, 2))
-                                ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
-                                ->prefix('RM')
-                                ->readonly()
-                                ->default(0),
-                            Forms\Components\TextInput::make('percentage_tax')
-                                ->prefix('%')
-                                ->live(onBlur: true)
-                                ->formatStateUsing(fn ( $state)  => (int)$state)
-                                ->integer()
-                                ->default(0),
-                            Forms\Components\TextInput::make('delivery')
-                                ->regex('/^[0-9]*(?:\.[0-9]*)?(?:,[0-9]*(?:\.[0-9]*)?)*$/')
-                                ->formatStateUsing(fn ( $state)  => number_format($state, 2))
-                                ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
-                                ->prefix('RM')
-                                ->live(onBlur: true)
-                                ->default(0.00),
-                            Forms\Components\TextInput::make('final_amount')
-                                ->formatStateUsing(fn ( $state)  => number_format($state, 2))
-                                ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
-                                ->prefix('RM')
-                                ->readonly()
-                                ->default(0.00),
-                            Forms\Components\TextInput::make('balance')
-                                ->formatStateUsing(fn ( $state)  => number_format($state, 2))
-                                ->dehydrateStateUsing(fn (string $state): string => (float)str_replace(",", "", $state))
-                                ->prefix('RM')
-                                ->readonly()
-                                ->helperText( fn(?Model $record, string $operation) => $operation == 'edit' ? 'On changes balance will be updated after save. Original balance: ' . $record->balance : '')
-                                ->default(0.00),
-                                
+                            ->schema([
+                                Forms\Components\TextInput::make('sub_total')
+                                    ->formatStateUsing(fn($state)  => number_format($state, 2))
+                                    ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
+                                    ->prefix('RM')
+                                    ->readonly()
+                                    ->default(0),
+                                Forms\Components\TextInput::make('taxes')
+                                    ->formatStateUsing(fn($state)  => number_format($state, 2))
+                                    ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
+                                    ->prefix('RM')
+                                    ->readonly()
+                                    ->default(0),
+                                Forms\Components\TextInput::make('percentage_tax')
+                                    ->prefix('%')
+                                    ->live(onBlur: true)
+                                    ->formatStateUsing(fn($state)  => (int)$state)
+                                    ->integer()
+                                    ->default(0),
+                                Forms\Components\TextInput::make('delivery')
+                                    ->regex('/^[0-9]*(?:\.[0-9]*)?(?:,[0-9]*(?:\.[0-9]*)?)*$/')
+                                    ->formatStateUsing(fn($state)  => number_format($state, 2))
+                                    ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
+                                    ->prefix('RM')
+                                    ->live(onBlur: true)
+                                    ->default(0.00),
+                                Forms\Components\TextInput::make('final_amount')
+                                    ->formatStateUsing(fn($state)  => number_format($state, 2))
+                                    ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
+                                    ->prefix('RM')
+                                    ->readonly()
+                                    ->default(0.00),
+                                Forms\Components\TextInput::make('balance')
+                                    ->formatStateUsing(fn($state)  => number_format($state, 2))
+                                    ->dehydrateStateUsing(fn(string $state): string => (float)str_replace(",", "", $state))
+                                    ->prefix('RM')
+                                    ->readonly()
+                                    ->helperText(fn(?Model $record, string $operation) => $operation == 'edit' ? 'On changes balance will be updated after save. Original balance: ' . $record->balance : '')
+                                    ->default(0.00),
 
-                        ])
-                        ->inlineLabel()
-                        ->columns(2),
+
+                            ])
+                            ->inlineLabel()
+                            ->columns(2),
 
                         Forms\Components\Placeholder::make('calculation')
                             ->hiddenLabel()
-                            ->content(function ($get, $set){
-                                $sub_total = 0 ; 
-                                $taxes = 0 ;
-                                
-                                if(!$repeaters = $get('items')){
-                                    return $sub_total ;
+                            ->content(function ($get, $set) {
+                                $sub_total = 0;
+                                $taxes = 0;
+
+                                if (!$repeaters = $get('items')) {
+                                    return $sub_total;
                                 }
-                                foreach($repeaters AS $key => $val){
+                                foreach ($repeaters as $key => $val) {
                                     $sub_total += (float)str_replace(",", "", $get("items.{$key}.total"));
-                                    
-                                    if($get("items.{$key}.tax") == true){
-                                        $taxes = $taxes + ((int)$get('percentage_tax') / 100 * (float)str_replace(",", "", $get("items.{$key}.total"))) ;
+
+                                    if ($get("items.{$key}.tax") == true) {
+                                        $taxes = $taxes + ((int)$get('percentage_tax') / 100 * (float)str_replace(",", "", $get("items.{$key}.total")));
                                     }
-                                    
                                 }
 
                                 $before_final_amount = (float)str_replace(",", "", $get("final_amount"));
@@ -383,62 +391,62 @@ class InvoiceResource extends Resource
                                 $set('taxes', number_format($taxes, 2));
                                 $set('balance', number_format($current_balance + $additional_amount, 2));
                                 $set('final_amount', number_format($final_amount, 2));
-                                
-                               
-                                return ;
+
+
+                                return;
                                 // return $sub_total." ".(float)$get("taxes"). " ". (float)$get("delivery")." ".$sub_total + (float)$get("taxes") + (float)$get("delivery")  ;
                             }),
 
                     ]),
 
-                    Forms\Components\Section::make()
-                        ->schema([
-                            Tabs::make('Tabs')
-                                ->tabs([
-                                    Tabs\Tab::make('additional')
-                                        ->label(__('Additional'))
-                                        ->schema([
-                                            Forms\Components\Textarea::make('terms_conditions'),
-                                            Forms\Components\Textarea::make('footer'),
-                                            
-                                        ])->columns(2),
+                Forms\Components\Section::make()
+                    ->schema([
+                        Tabs::make('Tabs')
+                            ->tabs([
+                                Tabs\Tab::make('additional')
+                                    ->label(__('Additional'))
+                                    ->schema([
+                                        Forms\Components\Textarea::make('terms_conditions'),
+                                        Forms\Components\Textarea::make('footer'),
 
-                                    Tabs\Tab::make('Notes')
-                                        ->label(__('Notes'))
-                                        ->schema([
-                                            Textarea::make('content')
-                                                ->visible(fn (string $operation): string => $operation == 'create')
-                                                ->label('Content'),
+                                    ])->columns(2),
 
-                                            Forms\Components\Livewire::make(NoteTable::class,['type' => 'invoice'])
-                                                ->key('NoteTable')
-                                                ->hidden(fn (?Model $record): bool => $record === null),
-                                        ]),
-                                    Tabs\Tab::make('l_attachments')
-                                        ->label(__('Attachments'))
-                                        ->schema([
-                                            FileUpload::make('attachments')
-                                                ->directory('invoice-attachments')
-                                                ->multiple()
-                                                ->downloadable()
-                                        ]),
-                                   
-                                    Tabs\Tab::make('payment')
-                                        ->label(__('Payment'))
-                                        ->hidden(fn (?Model $record): bool => $record === null)
-                                        ->schema([
-                                            Forms\Components\Livewire::make(PaymentTable::class,[])
+                                Tabs\Tab::make('Notes')
+                                    ->label(__('Notes'))
+                                    ->schema([
+                                        Textarea::make('content')
+                                            ->visible(fn(string $operation): string => $operation == 'create')
+                                            ->label('Content'),
+
+                                        Forms\Components\Livewire::make(NoteTable::class, ['type' => 'invoice'])
+                                            ->key('NoteTable')
+                                            ->hidden(fn(?Model $record): bool => $record === null),
+                                    ]),
+                                Tabs\Tab::make('l_attachments')
+                                    ->label(__('Attachments'))
+                                    ->schema([
+                                        FileUpload::make('attachments')
+                                            ->directory('invoice-attachments')
+                                            ->multiple()
+                                            ->downloadable()
+                                    ]),
+
+                                Tabs\Tab::make('payment')
+                                    ->label(__('Payment'))
+                                    ->hidden(fn(?Model $record): bool => $record === null)
+                                    ->schema([
+                                        Forms\Components\Livewire::make(PaymentTable::class, [])
                                             ->key('PaymentTable')
-                                        ])
+                                    ])
 
-                                ])
-                        ]),
+                            ])
+                    ]),
 
-                   
 
-                
 
-                         
+
+
+
             ]);
     }
 
@@ -449,7 +457,8 @@ class InvoiceResource extends Resource
                 Tables\Columns\TextColumn::make('index')
                     ->label('#')
                     ->state(
-                        static function (HasTable $livewire, stdClass $rowLoop): string {                            return (string) (
+                        static function (HasTable $livewire, stdClass $rowLoop): string {
+                            return (string) (
                                 $rowLoop->iteration +
                                 ($livewire->getTableRecordsPerPage() * (
                                     $livewire->getTablePage() - 1
@@ -460,12 +469,12 @@ class InvoiceResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('numbering')
                     ->label('No.')
-                    ->formatStateUsing(function(string $state, $record): string {
+                    ->formatStateUsing(
+                        function (string $state, $record): string {
                             $newDate = date("d M, Y", strtotime($record->invoice_date));
-                            $prefix = TeamSetting::where('team_id', Filament::getTenant()->id )->first()->invoice_prefix_code ?? '#I' ;
+                            $prefix = TeamSetting::where('team_id', Filament::getTenant()->id)->first()->invoice_prefix_code ?? '#I';
                             return __("<b class=''>{$prefix}{$state}</b><br>{$newDate}");
-
-                        } 
+                        }
                     )
                     ->html()
                     ->color('primary')
@@ -476,15 +485,16 @@ class InvoiceResource extends Resource
                     ->wrap()
                     ->sortable()
                     ->searchable()
-                    ->formatStateUsing(function(string $state, $record): string {
-                            return "{$state}<br><i>({$record->items()->count()} ". __('items') .")</i>";
-                        } 
+                    ->formatStateUsing(
+                        function (string $state, $record): string {
+                            return "{$state}<br><i>({$record->items()->count()} " . __('items') . ")</i>";
+                        }
                     )
                     ->toggleable(isToggledHiddenByDefault: false)
                     ->html(),
                 Tables\Columns\TextColumn::make('customer.name')
                     ->label(__('Customer'))
-                    ->formatStateUsing(fn (string $state): string => __("<b>{$state}</b>"))
+                    ->formatStateUsing(fn(string $state): string => __("<b>{$state}</b>"))
                     ->html()
                     ->searchable()
                     ->url(function ($record) {
@@ -518,7 +528,7 @@ class InvoiceResource extends Resource
                     ])
                     ->selectablePlaceholder(false)
                     ->searchable(),
-               
+
 
                 Tables\Columns\TextColumn::make('sub_total')
                     ->prefix('RM ')
@@ -549,11 +559,11 @@ class InvoiceResource extends Resource
                     ->prefix('RM ')
                     ->label(__("Balance"))
                     ->state(function (Invoice $record): ?float {
-                        return $record->balance ;
+                        return $record->balance;
                     })
                     ->numeric()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -580,33 +590,33 @@ class InvoiceResource extends Resource
                 Filter::make('numbering_f')
                     ->form([
                         TextInput::make('numbering')
-                        ->label('No' )
-                        ->prefix('#Q'),
+                            ->label('No')
+                            ->prefix('#Q'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
                                 $data['numbering'],
-                                fn (Builder $query, $data): Builder => $query->where('numbering', 'LIKE', '%' . $data . '%'),
+                                fn(Builder $query, $data): Builder => $query->where('numbering', 'LIKE', '%' . $data . '%'),
                             );
                     })
                     ->indicateUsing(function (array $data): ?string {
                         if (! $data['numbering']) {
                             return null;
                         }
-                 
-                        return 'No %'.$data['numbering'] . '%';
+
+                        return 'No %' . $data['numbering'] . '%';
                     }),
                 Filter::make('customer_name_f')
                     ->form([
                         TextInput::make('customer_name')
-                        ->label('Customer Name' ),
+                            ->label('Customer Name'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
                             ->when(
                                 $data['customer_name'],
-                                fn (Builder $query, $data): Builder =>  $query->whereHas('customer', function (Builder $query) use ($data) {
+                                fn(Builder $query, $data): Builder =>  $query->whereHas('customer', function (Builder $query) use ($data) {
                                     $query->where('customers.name', 'LIKE', '%' . $data . '%');
                                 }),
                             );
@@ -615,8 +625,8 @@ class InvoiceResource extends Resource
                         if (! $data['customer_name']) {
                             return null;
                         }
-                 
-                        return 'Customer Name %'.$data['customer_name'] . '%';
+
+                        return 'Customer Name %' . $data['customer_name'] . '%';
                     }),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->actions([
@@ -639,38 +649,38 @@ class InvoiceResource extends Resource
                             $payment = Payment::create($data);
                             //update balance on invoice
                             $totalPayment = Payment::where('team_id', Filament::getTenant()->id)
-                            ->where('invoice_id', $record->id)
-                            ->where('status', 'completed')->sum('total');
+                                ->where('invoice_id', $record->id)
+                                ->where('status', 'completed')->sum('total');
                             $totalRefunded = Payment::where('team_id', Filament::getTenant()->id)
-                            ->where('invoice_id', $record->id)
-                            ->where('status', 'refunded')->sum('total');
+                                ->where('invoice_id', $record->id)
+                                ->where('status', 'refunded')->sum('total');
 
-                            $record->balance = $record->final_amount - $totalPayment + $totalRefunded; 
-                            if($record->balance == 0){
-                                $record->invoice_status = 'done'; 
-                            }elseif($record->invoice_status == 'done'){
-                                $record->invoice_status = 'new' ;
+                            $record->balance = $record->final_amount - $totalPayment + $totalRefunded;
+                            if ($record->balance == 0) {
+                                $record->invoice_status = 'done';
+                            } elseif ($record->invoice_status == 'done') {
+                                $record->invoice_status = 'new';
                             }
                             $record->update();
                         }), // Add the custom action button
-                    
-                    
-                    
+
+
+
                     Tables\Actions\Action::make('replicate')
                         ->label(__('Replicate'))
                         ->icon('heroicon-m-square-2-stack')
                         ->color('info')
                         ->action(function (Model $record, Component $livewire) {
-                            $team_setting = TeamSetting::where('team_id', $record->team_id )->first();
-                            $invoice_current_no = $team_setting->invoice_current_no ?? '0' ;    
+                            $team_setting = TeamSetting::where('team_id', $record->team_id)->first();
+                            $invoice_current_no = $team_setting->invoice_current_no ?? '0';
 
-                            $team_setting->invoice_current_no = $invoice_current_no + 1 ;
+                            $team_setting->invoice_current_no = $invoice_current_no + 1;
                             $team_setting->save();
 
                             // $lastid = Invoice::where('team_id', $record->team_id)->count('id') + 1 ;
                             $invoice =  Invoice::create([
-                                'customer_id' => $record->customer_id ,
-                                'team_id' => $record->team_id ,
+                                'customer_id' => $record->customer_id,
+                                'team_id' => $record->team_id,
                                 'numbering' => str_pad(($invoice_current_no + 1), 6, "0", STR_PAD_LEFT),
                                 'invoice_date' => $record->invoice_date,
                                 'pay_before' => $record->pay_before, // Valid days between 7 and 30
@@ -700,51 +710,49 @@ class InvoiceResource extends Resource
                             };
 
                             Notification::make()
-                            ->title('Replicate Invoice successfully')
-                            ->success()
-                            ->send();
+                                ->title('Replicate Invoice successfully')
+                                ->success()
+                                ->send();
 
-                            $livewire->redirect(InvoiceResource::getUrl('edit', ['record' => $invoice->id]), navigate:true);
+                            $livewire->redirect(InvoiceResource::getUrl('edit', ['record' => $invoice->id]), navigate: true);
                         }),
-                    
-                    
-                    Tables\Actions\Action::make('public_url') 
+
+
+                    Tables\Actions\Action::make('public_url')
                         ->label('Public Url')
                         ->color('success')
                         ->icon('heroicon-o-globe-alt')
                         ->action(function (Model $record) {
                             Notification::make()
-                            ->title('Copy Public Url Successfully')
-                            ->success()
-                            ->send();
-                            
+                                ->title('Copy Public Url Successfully')
+                                ->success()
+                                ->send();
                         })
                         ->requiresConfirmation()
                         ->modalHeading('Public Url')
-                        ->modalDescription( fn (Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="'.url('invoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id).'">Redirect to Public URL</a></button>'))
+                        ->modalDescription(fn(Model $record) => new HtmlString('<button type="button" class="fi-btn" style="padding:10px;background:grey;color:white;border-radius: 10px;"><a target="_blank" href="' . url('invoice-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id) . '">Redirect to Public URL</a></button>'))
                         ->modalSubmitActionLabel('Copy public URL')
                         ->extraAttributes(function (Model $record) {
-                           return [
+                            return [
                                 'class' => 'copy-public_url',
-                                'myurl' => url('invoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id),
-                            ] ;
-                            
+                                'myurl' => url('invoice-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id),
+                            ];
                         }),
-                    Tables\Actions\Action::make('pdf') 
+                    Tables\Actions\Action::make('pdf')
                         ->label('PDF')
                         ->color('success')
                         ->icon('heroicon-o-arrow-down-tray')
-                        ->url(fn ($record): ?string => url('invoicepdf')."/".base64_encode("luqmanahmadnordin".$record->id))
+                        ->url(fn($record): ?string => url('invoice-pdf') . "/" . base64_encode("luqmanahmadnordin" . $record->id))
                         ->openUrlInNewTab(),
-                        // ->action(function (Model $record) {
-                        //     return response()->streamDownload(function () use ($record) {
-                        //         echo Pdf::loadHtml(
-                        //             Blade::render('pdf', ['record' => $record])
-                        //         )
-                        //         ->setBasePath(public_path())
-                        //         ->stream();
-                        //     }, str_pad($record->id, 6, "0", STR_PAD_LEFT)  . '.pdf');
-                        // }), 
+                    // ->action(function (Model $record) {
+                    //     return response()->streamDownload(function () use ($record) {
+                    //         echo Pdf::loadHtml(
+                    //             Blade::render('pdf', ['record' => $record])
+                    //         )
+                    //         ->setBasePath(public_path())
+                    //         ->stream();
+                    //     }, str_pad($record->id, 6, "0", STR_PAD_LEFT)  . '.pdf');
+                    // }), 
                     Tables\Actions\Action::make('sendEmail')
                         ->label('Send Email')
                         ->color('warning')
@@ -756,25 +764,25 @@ class InvoiceResource extends Resource
                         ->action(function (Model $record) {
                             $customer = Customer::where('id', $record->customer_id)->first();
                             Mail::to($customer->email)
-                            ->send(new InvoiceEmail($record, $customer));
+                                ->send(new InvoiceEmail($record, $customer));
 
 
                             Notification::make()
-                              ->title('Email Send successfully')
-                              ->success()
-                              ->send()
-                              ->sendToDatabase(auth()->user());
+                                ->title('Email Send successfully')
+                                ->success()
+                                ->send()
+                                ->sendToDatabase(auth()->user());
                         }),
-                       
-                       
-                        
-                       
+
+
+
+
                 ])
-                ->label('More actions')
-                ->icon('heroicon-m-ellipsis-vertical')
-                ->size(ActionSize::Small)
-                ->color('primary')
-                ->button()
+                    ->label('More actions')
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->size(ActionSize::Small)
+                    ->color('primary')
+                    ->button()
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -784,7 +792,7 @@ class InvoiceResource extends Resource
                 ]),
             ])
             ->recordUrl(
-                fn (Model $record): string => InvoiceResource::getUrl('edit', ['record' => $record->id])
+                fn(Model $record): string => InvoiceResource::getUrl('edit', ['record' => $record->id])
             )
             ->defaultSort('updated_at', 'desc');
     }
@@ -817,95 +825,95 @@ class InvoiceResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::whereBelongsTo(Filament::getTenant(), 'team')
-        ->where('invoice_status', 'new')->count();
-        
+            ->where('invoice_status', 'new')->count();
     }
 
-    public static function customerForm(){
+    public static function customerForm()
+    {
         return  Forms\Components\Group::make()
-        ->schema([
-            Forms\Components\Section::make('Info')
             ->schema([
-                Forms\Components\Group::make()
-                ->schema([
-                    Forms\Components\TextInput::make('name')
-                        ->required()
-                        ->maxLength(255),
-                    
-                ])
-                ->columns(1),
-                Forms\Components\Group::make()
-                ->schema([
-                    Forms\Components\TextInput::make('email')
-                        ->email()
-                        ->required()
-                        ->maxLength(255),
-                    Forms\Components\TextInput::make('phone')
-                        ->tel()
-                        ->required()
-                        ->maxLength(255),
-                   
-                    
-                ])
-                ->columns(2),
-         
-                
-                Forms\Components\Group::make()
+                Forms\Components\Section::make('Info')
                     ->schema([
-                        Forms\Components\TextInput::make('company')
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('ssm')
-                            ->label('SSM No.')
-                            ->maxLength(255),
-                        
-                    ])
-                    ->columns(3),
-            ]),
-            Forms\Components\Section::make('Address')
-            ->schema([
-                Forms\Components\Group::make()
-                ->schema([  
-                    Forms\Components\TextInput::make('address')
-                        ->maxLength(255),
-                ]),
-                Forms\Components\Group::make()
-                ->schema([
-                    Forms\Components\TextInput::make('poscode')
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('city')
-                    ->maxLength(255),
-                Forms\Components\Select::make('state')
-                            ->options([
-                                'JHR' => 'Johor',
-                                'KDH' => 'Kedah',
-                                'KTN' => 'Kelantan',
-                                'MLK' => 'Melaka',
-                                'NSN' => 'Negeri Sembilan',
-                                'PHG' => 'Pahang',
-                                'PRK' => 'Perak',
-                                'PLS' => 'Perlis',
-                                'PNG' => 'Pulau Pinang',
-                                'SBH' => 'Sabah',
-                                'SWK' => 'Sarawak',
-                                'SGR' => 'Selangor',
-                                'TRG' => 'Terengganu',
-                                'KUL' => 'W.P. Kuala Lumpur',
-                                'LBN' => 'W.P. Labuan',
-                                'PJY' => 'W.P. Putrajaya'
+                        Forms\Components\Group::make()
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255),
+
                             ])
-                            ->searchable()
-                            ->preload()
+                            ->columns(1),
+                        Forms\Components\Group::make()
+                            ->schema([
+                                Forms\Components\TextInput::make('email')
+                                    ->email()
+                                    ->required()
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('phone')
+                                    ->tel()
+                                    ->required()
+                                    ->maxLength(255),
 
-                ])->columns(3),
 
-              
-                
+                            ])
+                            ->columns(2),
 
-                    
-            ])
-           
-            
-        ]);
+
+                        Forms\Components\Group::make()
+                            ->schema([
+                                Forms\Components\TextInput::make('company')
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('ssm')
+                                    ->label('SSM No.')
+                                    ->maxLength(255),
+
+                            ])
+                            ->columns(3),
+                    ]),
+                Forms\Components\Section::make('Address')
+                    ->schema([
+                        Forms\Components\Group::make()
+                            ->schema([
+                                Forms\Components\TextInput::make('address')
+                                    ->maxLength(255),
+                            ]),
+                        Forms\Components\Group::make()
+                            ->schema([
+                                Forms\Components\TextInput::make('poscode')
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('city')
+                                    ->maxLength(255),
+                                Forms\Components\Select::make('state')
+                                    ->options([
+                                        'JHR' => 'Johor',
+                                        'KDH' => 'Kedah',
+                                        'KTN' => 'Kelantan',
+                                        'MLK' => 'Melaka',
+                                        'NSN' => 'Negeri Sembilan',
+                                        'PHG' => 'Pahang',
+                                        'PRK' => 'Perak',
+                                        'PLS' => 'Perlis',
+                                        'PNG' => 'Pulau Pinang',
+                                        'SBH' => 'Sabah',
+                                        'SWK' => 'Sarawak',
+                                        'SGR' => 'Selangor',
+                                        'TRG' => 'Terengganu',
+                                        'KUL' => 'W.P. Kuala Lumpur',
+                                        'LBN' => 'W.P. Labuan',
+                                        'PJY' => 'W.P. Putrajaya'
+                                    ])
+                                    ->searchable()
+                                    ->preload()
+
+                            ])->columns(3),
+
+
+
+
+
+                    ])
+
+
+            ]);
     }
 
 
@@ -913,9 +921,10 @@ class InvoiceResource extends Resource
 
 
 
-    public static function paymentForm(){
-        $prefix = TeamSetting::where('team_id', Filament::getTenant()->id )->first()->invoice_prefix_code ?? '#I' ;
-        
+    public static function paymentForm()
+    {
+        $prefix = TeamSetting::where('team_id', Filament::getTenant()->id)->first()->invoice_prefix_code ?? '#I';
+
         return [
             Section::make()
                 ->schema([
@@ -926,10 +935,10 @@ class InvoiceResource extends Resource
                         ->readonly(),
                     Forms\Components\Select::make('payment_method_id')
                         ->label("Payment Method")
-                        ->options(function (Get $get, string $operation){
+                        ->options(function (Get $get, string $operation) {
                             $payment_method = PaymentMethod::where('team_id', Filament::getTenant()->id)
-                            ->where('status', 1)->get()->pluck('bank_name', 'id');
-                            return $payment_method ;
+                                ->where('status', 1)->get()->pluck('bank_name', 'id');
+                            return $payment_method;
                         })
                         ->searchable()
                         ->preload()
@@ -941,40 +950,39 @@ class InvoiceResource extends Resource
                         ->required()
                         ->prefix('RM')
                         ->regex('/^[0-9]*(?:\.[0-9]*)?(?:,[0-9]*(?:\.[0-9]*)?)*$/')
-                        ->formatStateUsing(fn (?string $state): ?string => number_format($state, 2))
-                        ->dehydrateStateUsing(fn (?string $state): ?string => (float)str_replace(",", "", $state))
+                        ->formatStateUsing(fn(?string $state): ?string => number_format($state, 2))
+                        ->dehydrateStateUsing(fn(?string $state): ?string => (float)str_replace(",", "", $state))
                         ->default(fn(Model $record) => abs($record->balance)),
                     Forms\Components\Select::make('status')
-                            ->options([
-                                'draft' => 'Draft',
-                                'pending_payment' => 'Pending payment',
-                                'on_hold' => 'On hold',
-                                'processing ' => 'Processing ',
-                                'completed' => 'Completed',
-                                'failed' => 'Failed',
-                                'cancelled' => 'Cancelled',
-                                'refunded' => 'Refunded',
-                            ])
-                            ->default(fn(Model $record) => $record->balance < 0 ? 'refunded' : 'completed')
-                            ->searchable()
-                            ->preload()
-                            ->required(),
+                        ->options([
+                            'draft' => 'Draft',
+                            'pending_payment' => 'Pending payment',
+                            'on_hold' => 'On hold',
+                            'processing ' => 'Processing ',
+                            'completed' => 'Completed',
+                            'failed' => 'Failed',
+                            'cancelled' => 'Cancelled',
+                            'refunded' => 'Refunded',
+                        ])
+                        ->default(fn(Model $record) => $record->balance < 0 ? 'refunded' : 'completed')
+                        ->searchable()
+                        ->preload()
+                        ->required(),
                     Forms\Components\TextInput::make('reference')
-                            ->required(),    
+                        ->required(),
                     Forms\Components\FileUpload::make('attachments')
-                            ->label(__('Attachments'))
-                            ->directory('payment-attachments')
-                            ->multiple()
-                            ->downloadable(),
+                        ->label(__('Attachments'))
+                        ->directory('payment-attachments')
+                        ->multiple()
+                        ->downloadable(),
                     Forms\Components\Textarea::make('notes')
                         ->maxLength(65535)
                         ->columnSpanFull(),
 
-                    
+
                 ])
                 ->columns(2),
-        
+
         ];
     }
-
 }

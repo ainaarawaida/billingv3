@@ -23,8 +23,8 @@ class DocumentSetting extends Page implements HasForms
     use InteractsWithForms;
 
     public ?array $data = [];
-    public $settingurl ;
-    
+    public $settingurl;
+
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
     protected static string $view = 'filament.sys.pages.document-setting';
@@ -36,9 +36,9 @@ class DocumentSetting extends Page implements HasForms
     public function mount(): void
     {
 
-        $this->settingurl = $this->getUrl() ;
+        $this->settingurl = $this->getUrl();
 
-        $teamSetting = TeamSetting::where('team_id', Filament::getTenant()->id )->first()?->toArray();
+        $teamSetting = TeamSetting::where('team_id', Filament::getTenant()->id)->first()?->toArray();
         $this->form->fill([
             'quotation_prefix_code' => $teamSetting['quotation_prefix_code'] ?? '#Q',
             'quotation_current_no' =>  $teamSetting['quotation_current_no'] ?? 0,
@@ -77,9 +77,9 @@ class DocumentSetting extends Page implements HasForms
                                             ]),
                                         Placeholder::make('')
                                             ->hiddenLabel()
-                                            ->content(fn ($record) => new HtmlString('
+                                            ->content(fn($record) => new HtmlString('
                                             <div class="flex flex-col justify-center items-center">
-                                                    <img src="'.url('/assets').'/quotationpdf.png" class="" style="width:300px;">
+                                                    <img src="' . url('/assets') . '/quotationpdf.jpg" class="" style="width:300px;">
                                               
                                             </div>
                                         
@@ -93,7 +93,7 @@ class DocumentSetting extends Page implements HasForms
                         Tabs\Tab::make('Invoice')
                             ->schema([
                                 // ...
-                                 TextInput::make('invoice_prefix_code')
+                                TextInput::make('invoice_prefix_code')
                                     ->prefixIcon('heroicon-o-clipboard-document-check')
                                     ->required(),
                                 TextInput::make('invoice_current_no')
@@ -110,9 +110,9 @@ class DocumentSetting extends Page implements HasForms
                                             ]),
                                         Placeholder::make('')
                                             ->hiddenLabel()
-                                            ->content(fn ($record) => new HtmlString('
+                                            ->content(fn($record) => new HtmlString('
                                             <div class="flex flex-col justify-center items-center">
-                                                    <img src="'.url('/assets').'/invoicepdf.png" class="" style="width:300px;">
+                                                    <img src="' . url('/assets') . '/invoicepdf.jpg" class="" style="width:300px;">
                                               
                                             </div>
                                         
@@ -122,21 +122,40 @@ class DocumentSetting extends Page implements HasForms
                                     ])
                                     ->columns(2)
 
-                               
+
                             ]),
                         Tabs\Tab::make('Recurring Invoice')
                             ->schema([
                                 // ...
-                                 TextInput::make('recurring_invoice_prefix_code')
+                                TextInput::make('recurring_invoice_prefix_code')
                                     ->prefixIcon('heroicon-o-clipboard-document-check')
                                     ->required(),
                                 TextInput::make('recurring_invoice_current_no')
                                     ->prefixIcon('heroicon-o-clipboard-document-check')
                                     ->numeric()
                                     ->required(),
-                                
+                                Group::make()
+                                    ->schema([
+                                        Select::make('recurring_invoice_template')
+                                            ->prefixIcon('heroicon-o-clipboard-document-check')
+                                            ->required()
+                                            ->default(1)
+                                            ->options([
+                                                '1' => 'Template 01',
+                                            ]),
+                                        Placeholder::make('')
+                                            ->hiddenLabel()
+                                            ->content(fn($record) => new HtmlString('
+                                            <div class="flex flex-col justify-center items-center">
+                                                    <img src="' . url('/assets') . '/recurringinvoicepdf.jpg" class="" style="width:300px;">
+                                              
+                                            </div>
+                                        
+                                        ')),
 
-                               
+
+                                    ]) 
+                                    ->columns(2)
                             ]),
                         Tabs\Tab::make('Payment')
                             ->schema([
@@ -171,10 +190,9 @@ class DocumentSetting extends Page implements HasForms
             return;
         }
 
-        Notification::make() 
-        ->success()
-        ->title(__('filament-panels::resources/pages/edit-record.notifications.saved.title'))
-        ->send(); 
-        
+        Notification::make()
+            ->success()
+            ->title(__('filament-panels::resources/pages/edit-record.notifications.saved.title'))
+            ->send();
     }
 }

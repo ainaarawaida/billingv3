@@ -11,6 +11,7 @@ use App\Filament\Auth\Login;
 use App\Filament\Sys\Widgets;
 use Filament\Facades\Filament;
 
+use App\Filament\Auth\Register;
 use Filament\Support\Colors\Color;
 use App\Filament\Sys\Pages\Dashboard;
 use Filament\Navigation\NavigationItem;
@@ -36,7 +37,7 @@ class SysPanelProvider extends PanelProvider
             ->id('sys')
             ->path('sys')
             ->login(Login::class)
-            ->registration()
+            ->registration(Register::class)
             ->passwordReset()
             ->emailVerification()
             ->profile()

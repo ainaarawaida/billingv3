@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Payment;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,11 @@ class RecurringInvoice extends Model
     public function invoices()
     {
         return $this->hasMany(Invoice::class, 'recurring_invoice_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'recurring_invoice_id');
     }
 
     public function customer(): BelongsTo

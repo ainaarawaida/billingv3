@@ -40,6 +40,7 @@ class HomePanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_AFTER ,
                 function(): string {
+                    // dd(auth()->user()->roles);
                     if(auth()->check()) {
 
                         $stringhtml = '' ;
@@ -51,32 +52,26 @@ class HomePanelProvider extends PanelProvider
                         </span></a>' ;
                         }
 
-                        if(auth()->user()->hasRole('coach')){
-                            $stringhtml .= '<a wire:navigate href="'.url('/coach/login').'" class="fi-topbar-item-button flex items-center justify-center gap-x-2 rounded-lg px-3 py-2 outline-none transition duration-75 hover:bg-gray-50 focus-visible:bg-gray-50 dark:hover:bg-white/5 dark:focus-visible:bg-white/5 bg-gray-50 dark:bg-white/5">
+                        if(auth()->user()->hasRole('customer')){
+                            $stringhtml .= '<a wire:navigate href="'.url('/sys/login').'" class="fi-topbar-item-button flex items-center justify-center gap-x-2 rounded-lg px-3 py-2 outline-none transition duration-75 hover:bg-gray-50 focus-visible:bg-gray-50 dark:hover:bg-white/5 dark:focus-visible:bg-white/5 bg-gray-50 dark:bg-white/5">
                    
                         <span class="fi-topbar-item-label text-sm font-medium text-primary-600 dark:text-primary-400">
-                            Coach
+                            Dashboard
                         </span></a>' ;
                         }
 
-                        if(auth()->user()->hasRole('rider')){
-                            $stringhtml .= '<a wire:navigate href="'.url('/rider/login').'" class="fi-topbar-item-button flex items-center justify-center gap-x-2 rounded-lg px-3 py-2 outline-none transition duration-75 hover:bg-gray-50 focus-visible:bg-gray-50 dark:hover:bg-white/5 dark:focus-visible:bg-white/5 bg-gray-50 dark:bg-white/5">
-                   
-                        <span class="fi-topbar-item-label text-sm font-medium text-primary-600 dark:text-primary-400">
-                            Rider
-                        </span></a>' ;
-                        }
-
+                    
 
                         return $stringhtml;
                     }
                     return '<a wire:navigate href="'.url('/sys/login').'" class="fi-topbar-item-button flex items-center justify-center gap-x-2 rounded-lg px-3 py-2 outline-none transition duration-75 hover:bg-gray-50 focus-visible:bg-gray-50 dark:hover:bg-white/5 dark:focus-visible:bg-white/5 bg-gray-50 dark:bg-white/5">
                    
                         <span class="fi-topbar-item-label text-sm font-medium text-primary-600 dark:text-primary-400">
-                            Admin
+                            Login
                         </span></a>
                         ' ;
                 }
+
             )
             ->discoverResources(in: app_path('Filament/Home/Resources'), for: 'App\\Filament\\Home\\Resources')
             ->discoverPages(in: app_path('Filament/Home/Pages'), for: 'App\\Filament\\Home\\Pages')
