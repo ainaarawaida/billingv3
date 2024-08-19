@@ -21,6 +21,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Forms\Components\FileUpload;
+use App\Http\Controllers\OnlinePayment\Toyyibpay;
 
 class RecurringInvoicePdf extends Page
 {
@@ -29,8 +30,8 @@ class RecurringInvoicePdf extends Page
     protected static string $view = 'filament.home.pages.recurring-invoice-pdf';
     protected static bool $shouldRegisterNavigation = false;
 
-    public $id ; 
-    public $recurring_invoice ;
+    public $id;
+    public $recurring_invoice;
 
     public function mount($id = null)
     {
@@ -38,7 +39,7 @@ class RecurringInvoicePdf extends Page
         $this->id = $id;
     }
 
-    
+
     public function render(): View
     {
         $recurring_invoice = RecurringInvoice::find($this->id);
@@ -48,7 +49,7 @@ class RecurringInvoicePdf extends Page
 
 
         $this->recurring_invoice = $recurring_invoice->toArray();
-        $this->recurring_invoice['invoices'] = $recurring_invoice->invoices->whereIn('invoice_status', ['new' ,'process','done' ,'expired'])->toArray() ;
+        $this->recurring_invoice['invoices'] = $recurring_invoice->invoices->whereIn('invoice_status', ['new', 'processing', 'done', 'expired'])->toArray();
         $this->recurring_invoice['logo'] =  $team->photo;
         $this->recurring_invoice['address'] =  $team->address;
         $this->recurring_invoice['poscode'] = $team->poscode;
@@ -62,10 +63,10 @@ class RecurringInvoicePdf extends Page
         $this->recurring_invoice['recurring_invoice_prefix'] = $team_setting->recurring_invoice_prefix_code ?? '#RI';
 
         $this->recurring_invoice['final_amount'] = collect($this->recurring_invoice['invoices'])->sum('final_amount');
-        $this->recurring_invoice['payments'] = $recurring_invoice->payments->toArray() ;
-        $this->recurring_invoice['payments_total'] = $recurring_invoice->payments->whereIn('status', ['new' ,'process','done' ,'expired'])->sum('total') ;
+        $this->recurring_invoice['payments'] = $recurring_invoice->payments->toArray();
+        $this->recurring_invoice['payments_total'] = $recurring_invoice->payments->whereIn('status', ['new', 'processing', 'done', 'expired'])->sum('total');
         $this->recurring_invoice['total_balance'] = collect($this->recurring_invoice['invoices'])->sum('balance');
-        
+
         $this->recurring_invoice['payment_method'] = PaymentMethod::where('status', 1)->where('team_id', $recurring_invoice->team_id)->pluck('bank_name', 'id')->toArray();
         // dd($this->recurring_invoice);
 
@@ -96,6 +97,7 @@ class RecurringInvoicePdf extends Page
     {
         return Action::make('payment')
             ->button()
+            ->hidden(fn() => collect($this->recurring_invoice['invoices'])->where('invoice_status', '!=', 'new')->first())
             ->icon('heroicon-m-credit-card')
             ->color('info')
             ->form([
@@ -116,7 +118,11 @@ class RecurringInvoicePdf extends Page
                 if ($payment_method->type == 'manual') {
                     $this->replaceMountedAction('manualpay', (array)$payment_method);
                 } else {
-                    $this->replaceMountedAction('paymentgatewaypay', (array)$payment_method);
+                    if ($payment_method->payment_gateway_id == 2) {
+                        $toyyibpay = (new Toyyibpay())->recurring($this->id, $data['payment_method_id']);
+                    } else {
+                        $this->replaceMountedAction('paymentgatewaypay', (array)$payment_method);
+                    }
                 }
             })
             ->modalSubmitAction(fn(StaticAction $action) => $action->label('Proceed'))
@@ -157,7 +163,7 @@ class RecurringInvoicePdf extends Page
                 ];
             })
             ->action(function (array $data, array $arguments): void {
-                foreach($this->recurring_invoice['invoices']  AS $k => $v){
+                foreach ($this->recurring_invoice['invoices']  as $k => $v) {
                     $payment = Payment::create([
                         'team_id' => $this->recurring_invoice['team_id'],
                         'invoice_id' => $v['id'],
@@ -170,12 +176,15 @@ class RecurringInvoicePdf extends Page
                         'status' => 'processing',
                         'attachments' => $data['attachments'],
                     ]);
+                    $invoice = Invoice::find($v['id']);
+                    $invoice->update([
+                        'invoice_status' => 'processing',
+                    ]);
                 }
                 Notification::make()
-                ->title('Payment successfully')
-                ->success()
-                ->send();
-               
+                    ->title('Payment successfully')
+                    ->success()
+                    ->send();
             })
             ->modalSubmitAction(fn(StaticAction $action) => $action->label('Proceed'))
             ->modalCancelAction(fn(StaticAction $action) => $action->label('Close'));
@@ -211,12 +220,12 @@ class RecurringInvoicePdf extends Page
 
                 $invoice = Invoice::find($this->invoice->id);
                 $invoice->updateBalanceInvoice();
-             
+
 
                 Notification::make()
-                ->title('Payment successfully')
-                ->success()
-                ->send();
+                    ->title('Payment successfully')
+                    ->success()
+                    ->send();
             })
             ->modalSubmitAction(fn(StaticAction $action) => $action->label('Proceed'))
             ->modalCancelAction(fn(StaticAction $action) => $action->label('Close'));

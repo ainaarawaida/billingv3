@@ -14,7 +14,7 @@ class Invoice extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'attachments' => 'array', 
+        'attachments' => 'array',
     ];
 
     public function team(): BelongsTo
@@ -37,38 +37,47 @@ class Invoice extends Model
         return $this->hasMany(Item::class);
     }
 
-    public function notes(){
+    public function notes()
+    {
         return $this->hasMany(Note::class, 'type_id');
     }
 
-    public function updateBalanceInvoice(){
+    public function updateBalanceInvoice()
+    {
         $totalPayment = Payment::where('team_id', $this->team_id)
-        ->where('invoice_id', $this->id)
-        ->where('status', 'completed')->sum('total');
+            ->where('invoice_id', $this->id)
+            ->where('status', 'completed')->sum('total');
         $totalRefunded = Payment::where('team_id', $this->team_id)
-        ->where('invoice_id', $this->id)
-        ->where('status', 'refunded')->sum('total');
+            ->where('invoice_id', $this->id)
+            ->where('status', 'refunded')->sum('total');
 
-        $this->balance = $this->final_amount - $totalPayment + $totalRefunded; 
-        if($this->balance == 0){
-            $this->invoice_status = 'done'; 
-        }elseif($this->invoice_status == 'done'){
-            $this->invoice_status = 'new' ;
+        $this->balance = $this->final_amount - $totalPayment + $totalRefunded;
+        if ($this->balance == 0) {
+            $this->invoice_status = 'done';
+        } else if ($this->invoice_status == 'done') {
+            $this->invoice_status = 'new';
+        } else if ($this->invoice_status == 'processing') {
+            $checkPaymentStillProcessing =  Payment::where('team_id', $this->team_id)
+                ->where('invoice_id', $this->id)
+                ->where('status', 'processing')->first();
+            if ($checkPaymentStillProcessing) {
+                $this->invoice_status = 'processing';
+            } else {
+                $this->invoice_status = 'new';
+            }
         }
         $this->update();
-   
     }
 
     public function getTotalPayment()
     {
         $totalPayment = Payment::where('team_id', $this->team_id)
-        ->where('invoice_id', $this->id)
-        ->where('status', 'completed')->sum('total');
+            ->where('invoice_id', $this->id)
+            ->where('status', 'completed')->sum('total');
         $totalRefunded = Payment::where('team_id', $this->team_id)
-        ->where('invoice_id', $this->id)
-        ->where('status', 'refunded')->sum('total');
-        
+            ->where('invoice_id', $this->id)
+            ->where('status', 'refunded')->sum('total');
+
         return $totalPayment - $totalRefunded;
     }
-
 }

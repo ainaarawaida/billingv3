@@ -44,8 +44,8 @@ class ListInvoices extends ListRecords
                 ->badge(Invoice::query()->where('team_id', Filament::getTenant()->id)
                 ->where('invoice_status', 'new')->count())
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('invoice_status', 'new')),
-            'process' => Tab::make()
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('invoice_status', 'process')),
+            'processing' => Tab::make()
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('invoice_status', 'processing')),
             'done' => Tab::make()
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('invoice_status', 'done')),
             'expired' => Tab::make()

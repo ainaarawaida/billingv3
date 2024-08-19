@@ -37,7 +37,7 @@ class StatsOverview extends BaseWidget
         $invoicePaid = Invoice::where('team_id', Filament::getTenant()->id)
         ->where('invoice_status', 'done')->whereYear('invoice_date', $this->filter)->sum('balance') ;
         $invoiceWaiting = Invoice::where('team_id', Filament::getTenant()->id)
-        ->whereIn('invoice_status', ['new','process'])->whereYear('invoice_date', $this->filter)->sum('balance') ;
+        ->whereIn('invoice_status', ['new','processing'])->whereYear('invoice_date', $this->filter)->sum('balance') ;
         
 
         $received =Payment::where('team_id', Filament::getTenant()->id)
@@ -48,7 +48,7 @@ class StatsOverview extends BaseWidget
             Stat::make(__('Invoice Paid (RM)'), number_format($invoicePaid, 2) )
             ->description($this->filter)
             ->color('success'),
-            Stat::make(__('Invoice New/Process (RM)'), number_format($invoiceWaiting, 2))
+            Stat::make(__('Invoice New/Processing (RM)'), number_format($invoiceWaiting, 2))
             ->description($this->filter)
             ->color('success'),
             Stat::make(__('Payment Completed (RM)'), number_format($received, 2) )

@@ -29,16 +29,16 @@ class PaymentGateway extends Page implements HasForms
     use InteractsWithForms;
 
     public ?array $data = [];
-    
+
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationGroup = 'Setting';
     protected static ?int $navigationSort = 5;
     protected static string $view = 'filament.sys.pages.payment-gateway';
 
-    
+
     public function mount(): void
     {
-        $teamSetting = TeamSetting::where('team_id', Filament::getTenant()->id )->first()?->toArray();
+        $teamSetting = TeamSetting::where('team_id', Filament::getTenant()->id)->first()?->toArray();
         $this->form->fill($teamSetting['payment_gateway'] ?? []);
     }
 
@@ -54,10 +54,10 @@ class PaymentGateway extends Page implements HasForms
                                 // ...
                                 Placeholder::make('created')
                                     ->hiddenLabel()
-                                    ->content(fn ($record) => new HtmlString('<div class="text-center">
+                                    ->content(fn($record) => new HtmlString('<div class="text-center">
                                     <div class="flex flex-col justify-center items-center">
                                         <a href="https://securepay.my" target="_blank">
-                                            <img src="'.url('/assets').'/securepay.jpg" class="w-70">
+                                            <img src="' . url('/assets') . '/securepay.jpg" class="w-70">
                                         </a>
                                         <a href="https://securepay.my" target="_blank" >
                                             <strong>Belum ada akaun SecurePay?</strong>
@@ -70,16 +70,16 @@ class PaymentGateway extends Page implements HasForms
                                 </div>')),
                                 Hidden::make('Securepay.id')
                                     ->default(1)
-                                    ->formatStateUsing(fn (?string $state): ?string => 1),
+                                    ->formatStateUsing(fn(?string $state): ?string => 1),
                                 Hidden::make('Securepay.name')
                                     ->default('Securepay')
-                                    ->formatStateUsing(fn (?string $state): ?string => 'Securepay'),
+                                    ->formatStateUsing(fn(?string $state): ?string => 'Securepay'),
                                 Toggle::make('Securepay.status')
                                     ->onIcon('heroicon-o-check')
                                     ->offIcon('heroicon-o-x-mark')
                                     ->onColor('success')
                                     ->offColor('danger'),
-                              
+
                                 TextInput::make('Securepay.sp_SecurePay_UID')
                                     ->label('SecurePay UID')
                                     ->prefixIcon('heroicon-o-clipboard-document-check'),
@@ -94,10 +94,10 @@ class PaymentGateway extends Page implements HasForms
                             ->schema([
                                 Placeholder::make('created')
                                     ->hiddenLabel()
-                                    ->content(fn ($record) => new HtmlString('<div class="text-center">
+                                    ->content(fn($record) => new HtmlString('<div class="text-center">
                                     <div class="flex flex-col justify-center items-center">
                                         <a href="https://toyyibpay.com/" target="_blank">
-                                            <img src="'.url('/assets').'/toyyibpay.jpg" class="w-70">
+                                            <img src="' . url('/assets') . '/toyyibpay.jpg" class="w-70">
                                         </a>
                                         <a href="https://toyyibpay.com/" target="_blank" >
                                             <strong>Belum ada akaun toyyibpay?</strong>
@@ -110,19 +110,22 @@ class PaymentGateway extends Page implements HasForms
                                 </div>')),
                                 Hidden::make('Toyyibpay.id')
                                     ->default(2)
-                                    ->formatStateUsing(fn (?string $state): ?string => 2),
+                                    ->formatStateUsing(fn(?string $state): ?string => 2),
                                 Hidden::make('Toyyibpay.name')
                                     ->default('Toyyibpay')
-                                    ->formatStateUsing(fn (?string $state): ?string => 'Toyyibpay'),
+                                    ->formatStateUsing(fn(?string $state): ?string => 'Toyyibpay'),
                                 Toggle::make('Toyyibpay.status')
                                     ->onIcon('heroicon-o-check')
                                     ->offIcon('heroicon-o-x-mark')
                                     ->onColor('success')
-                                    ->offColor('danger'),
+                                    ->offColor('danger')
+                                    ->live(),
                                 TextInput::make('Toyyibpay.tp_ToyyibPay_User_Secret_Key')
+                                    ->required(fn($get) => $get('Toyyibpay.status') == true && $get('Toyyibpay.sandbox') == false ? true : false)
                                     ->label('ToyyibPay User Secret Key')
                                     ->prefixIcon('heroicon-o-clipboard-document-check'),
                                 TextInput::make('Toyyibpay.tp_ToyyibPay_categoryCode')
+                                    ->required(fn($get) => $get('Toyyibpay.status') == true && $get('Toyyibpay.sandbox') == false ? true : false)
                                     ->label('ToyyibPay Category Code')
                                     ->prefixIcon('heroicon-o-clipboard-document-check'),
                                 Toggle::make('Toyyibpay.billChargeToCustomer')
@@ -138,22 +141,25 @@ class PaymentGateway extends Page implements HasForms
                                             ->onIcon('heroicon-o-check')
                                             ->offIcon('heroicon-o-x-mark')
                                             ->onColor('success')
-                                            ->offColor('danger'),
+                                            ->offColor('danger')
+                                            ->live(),
                                         TextInput::make('Toyyibpay.tp_ToyyibPay_Sandbox_User_Secret_Key')
                                             ->label('ToyyibPay Sandbox User Secret Key')
-                                            ->prefixIcon('heroicon-o-clipboard-document-check'),
+                                            ->prefixIcon('heroicon-o-clipboard-document-check')
+                                            ->required(fn($get) => $get('Toyyibpay.sandbox') ),
                                         TextInput::make('Toyyibpay.tp_ToyyibPay_Sandbox_categoryCode')
                                             ->label('ToyyibPay Sandbox Category Code')
-                                            ->prefixIcon('heroicon-o-clipboard-document-check'),
+                                            ->prefixIcon('heroicon-o-clipboard-document-check')
+                                            ->required(fn($get) => $get('Toyyibpay.sandbox') ),
                                         // ...
                                     ])
-                             
+
                             ]),
                         // Tabs\Tab::make('Tab 3')
                         //     ->schema([
                         //         // ...
                         //     ]),
-                        ]),
+                    ]),
 
             ])
             ->columns(1)
@@ -173,7 +179,7 @@ class PaymentGateway extends Page implements HasForms
     {
 
         $temp = $this->form->getState();
-        $data['payment_gateway'] = $temp ; 
+        $data['payment_gateway'] = $temp;
         try {
             $teamSetting = TeamSetting::updateOrCreate(
                 ['team_id' => Filament::getTenant()->id], // Search by email
@@ -184,20 +190,18 @@ class PaymentGateway extends Page implements HasForms
         }
 
         //update all payment method if payment gateway changed
-        foreach($temp AS $key => $val){
-            if($val['status'] == false){
+        foreach ($temp as $key => $val) {
+            if ($val['status'] == false) {
                 PaymentMethod::where('team_id', Filament::getTenant()->id)
-                ->where('payment_gateway_id', $val['id'])
-                ->update(['status' => 0]);
+                    ->where('payment_gateway_id', $val['id'])
+                    ->update(['status' => 0]);
             }
-
         }
 
 
-        Notification::make() 
-        ->success()
-        ->title(__('filament-panels::resources/pages/edit-record.notifications.saved.title'))
-        ->send(); 
-        
+        Notification::make()
+            ->success()
+            ->title(__('filament-panels::resources/pages/edit-record.notifications.saved.title'))
+            ->send();
     }
 }

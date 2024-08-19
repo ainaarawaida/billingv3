@@ -92,7 +92,7 @@ class RecurringInvoiceSeeder extends Seeder
                         'invoice_status' => $faker->randomElement([
                             'draft',
                             'new',
-                            'process',
+                            'processing',
                             'done',
                             'expired',
                             'cancelled',
@@ -157,7 +157,7 @@ class RecurringInvoiceSeeder extends Seeder
                         'invoice_status' => $faker->randomElement([
                             'draft',
                             'new',
-                            'process',
+                            'processing',
                             'done',
                             'expired',
                             'cancelled',
@@ -188,7 +188,7 @@ class RecurringInvoiceSeeder extends Seeder
 
                 }
                 $payment_method = PaymentMethod::where('team_id', $invoice->team_id)->first();
-                if($invoice->invoice_status == 'process'){
+                if($invoice->invoice_status == 'processing'){
                     $payment = Payment::Create(
                         [
                             'team_id' => $invoice->team_id,

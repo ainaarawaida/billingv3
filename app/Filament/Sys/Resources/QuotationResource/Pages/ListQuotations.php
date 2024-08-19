@@ -47,10 +47,10 @@ class ListQuotations extends ListRecords
                 ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
                     ->where('quote_status', 'new')->count())
                 ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'new')),
-            'process' => Tab::make()
+            'processing' => Tab::make()
                 // ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
                 // ->where('quote_status', 'process')->count())
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'process')),
+                ->modifyQueryUsing(fn(Builder $query) => $query->where('quote_status', 'processing')),
             'done' => Tab::make()
                 // ->badge(Quotation::query()->where('team_id', Filament::getTenant()->id)
                 // ->where('quote_status', 'done')->count())

@@ -462,12 +462,12 @@ class RecurringInvoiceResource extends Resource
                     ->wrapHeader()
                     // ->sum('invoices', 'final_amount')
                     ->sum([
-                        'invoices' => fn (Builder $query) => $query->whereIn('invoice_status', ['new','process', 'done', 'expired']),
+                        'invoices' => fn (Builder $query) => $query->whereIn('invoice_status', ['new','processing', 'done', 'expired']),
                     ], 'final_amount'),
                 Tables\Columns\TextColumn::make('invoices_sum_balance')
                     ->wrapHeader()
                     ->sum([
-                        'invoices' => fn (Builder $query) => $query->whereIn('invoice_status', ['new','process', 'done', 'expired']),
+                        'invoices' => fn (Builder $query) => $query->whereIn('invoice_status', ['new','processing', 'done', 'expired']),
                     ], 'balance')
                     // ->sum('invoices', 'balance')
                     ->summarize(Sum::make()->label('Total')),

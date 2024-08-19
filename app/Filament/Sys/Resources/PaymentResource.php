@@ -78,7 +78,7 @@ class PaymentResource extends Resource
                                 'draft' => 'Draft',
                                 'pending_payment' => 'Pending payment',
                                 'on_hold' => 'On hold',
-                                'processing ' => 'Processing ',
+                                'processing' => 'Processing',
                                 'completed' => 'Completed',
                                 'failed' => 'Failed',
                                 'cancelled' => 'Cancelled',

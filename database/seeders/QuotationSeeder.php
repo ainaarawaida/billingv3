@@ -38,7 +38,7 @@ class QuotationSeeder extends Seeder
                 'quote_status' => $faker->randomElement([
                     'draft',
                     'new',
-                    'process',
+                    'processing',
                     'done',
                     'expired',
                     'cancelled',

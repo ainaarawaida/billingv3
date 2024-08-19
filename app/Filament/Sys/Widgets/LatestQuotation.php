@@ -102,7 +102,7 @@ class LatestQuotation extends BaseWidget
                 ->options([
                     'draft' => 'Draft',
                     'new' => 'New',
-                    'process' => 'Process',
+                    'processing' => 'Processing',
                     'done' => 'Done',
                     'expired' => 'Expired',
                     'cancelled' => 'Cancelled',

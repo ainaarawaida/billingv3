@@ -137,7 +137,7 @@ class QuotationResource extends Resource
                                     ->options([
                                         'draft' => 'Draft',
                                         'new' => 'New',
-                                        'process' => 'Process',
+                                        'processing' => 'Processing',
                                         'done' => 'Done',
                                         'expired' => 'Expired',
                                         'cancelled' => 'Cancelled',
@@ -566,7 +566,7 @@ class QuotationResource extends Resource
                     ->options([
                         'draft' => 'Draft',
                         'new' => 'New',
-                        'process' => 'Process',
+                        'processing' => 'Processing',
                         'done' => 'Done',
                         'expired' => 'Expired',
                         'cancelled' => 'Cancelled',
@@ -617,7 +617,7 @@ class QuotationResource extends Resource
                     ->options([
                         'draft' => 'Draft',
                         'new' => 'New',
-                        'process' => 'Process',
+                        'processing' => 'Processing',
                         'done' => 'Done',
                         'expired' => 'Expired',
                         'cancelled' => 'Cancelled',

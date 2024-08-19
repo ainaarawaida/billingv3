@@ -138,7 +138,7 @@ class InvoicesRelationManager extends RelationManager
                                     ->options([
                                         'draft' => 'Draft',
                                         'new' => 'New',
-                                        'process' => 'Process',
+                                        'processing' => 'Processing',
                                         'done' => 'Done',
                                         'expired' => 'Expired',
                                         'cancelled' => 'Cancelled',
@@ -517,7 +517,7 @@ class InvoicesRelationManager extends RelationManager
                 ->options([
                     'draft' => 'Draft',
                     'new' => 'New',
-                    'process' => 'Process',
+                    'processing' => 'Processing',
                     'done' => 'Done',
                     'expired' => 'Expired',
                     'cancelled' => 'Cancelled',
@@ -578,7 +578,7 @@ class InvoicesRelationManager extends RelationManager
                 ->options([
                     'draft' => 'Draft',
                     'new' => 'New',
-                    'process' => 'Process',
+                    'processing' => 'Processing',
                     'done' => 'Done',
                     'expired' => 'Expired',
                     'cancelled' => 'Cancelled',
@@ -933,7 +933,7 @@ class InvoicesRelationManager extends RelationManager
                                 'draft' => 'Draft',
                                 'pending_payment' => 'Pending payment',
                                 'on_hold' => 'On hold',
-                                'processing ' => 'Processing ',
+                                'processing' => 'Processing',
                                 'completed' => 'Completed',
                                 'failed' => 'Failed',
                                 'cancelled' => 'Cancelled',
